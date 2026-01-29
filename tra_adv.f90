@@ -42,6 +42,7 @@ program tra_adv
   integer*8 :: itn_count
   CHARACTER(LEN = 10) :: env
   double precision :: step_timer_f
+  double precision :: first_step
   integer :: idx
   integer :: idx_1
   integer :: idx_2
@@ -270,6 +271,9 @@ program tra_adv
   ! Consider using the "ignore_dependencies_for" transformation option if this is a false dependency
   ! Consider using the "array_privatisation" transformation option if this is a write-write dependency
   do jt = 1, itn_count, 1
+    if(jt == 1) then
+        first_step = omp_get_wtime()
+    end if
     !$omp target
     !$omp teams distribute parallel do collapse(3) default(shared) private(ji,jj,jk,zice)
     do jk = 1, jpk, 1
@@ -503,8 +507,11 @@ program tra_adv
     enddo
     !$omp end teams distribute parallel do
     !$omp end target
+    if(jt == 1) then
+        first_step = omp_get_wtime() - first_step
+    end if
   enddo
-  step_timer_f = omp_get_wtime() - step_timer_f
+  step_timer_f = (omp_get_wtime() - step_timer_f) - first_step
 
   ! PSyclone CodeBlock (unsupported code) reason:
   !  - Unsupported statement: Open_Stmt
